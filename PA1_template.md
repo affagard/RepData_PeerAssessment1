@@ -15,7 +15,8 @@ output:
 \  
 
 # Libraries required for this report
-```{r message=FALSE}
+
+```r
 library(dplyr)
 library(ggplot2)
 library(scales)
@@ -34,7 +35,8 @@ library(knitr)
 \  
 
 #### Init values
-```{r}
+
+```r
         data_folder <- "data"
         fig_folder <- "figure"
         data_zip_name <- "activity.zip"
@@ -43,7 +45,8 @@ library(knitr)
 \  
 
 #### Dowload data source if not already done
-```{r}
+
+```r
         if(!file.exists(data_zip_name)) {
                 
                 download.file(data_url, destfile = data_zip_name, method = "curl")
@@ -53,7 +56,8 @@ library(knitr)
 \  
 
 #### Unzip data source if not already done
-```{r}
+
+```r
         if(!dir.exists(data_folder)) {
                 
                 dir.create(data_folder, showWarnings = TRUE, recursive = FALSE, mode = "0744")
@@ -64,7 +68,8 @@ library(knitr)
 \  
 
 #### Create a local folder for figures
-```{r}
+
+```r
         if(!dir.exists(fig_folder)) {
                 
                 dir.create(fig_folder, showWarnings = TRUE, recursive = FALSE, mode = "0744")
@@ -72,21 +77,24 @@ library(knitr)
         }
 ```
 #### Load activity dataset, (`activity`)
-```{r}
+
+```r
         activity <- read.csv (paste(data_folder,"/activity.csv", sep=""), header=TRUE, sep = ",", dec=".")
 ```
 \  
 
 #### Tidy data : Column (`activity$date`) as date
-```{r}
+
+```r
         activity$date <- as.Date(activity$date)
 ```
 \  
 
 #### Tidy data : Format column (`activity$interval`) as (`%H%M`) character pattern
-```{r}
+
+```r
         activity$interval <- str_pad(as.character(activity$interval), 4, pad = "0")
-```      
+```
 
 
 \  
@@ -95,7 +103,8 @@ library(knitr)
 
 ## What is mean total number of steps taken per day?
 #### Calculate total number of steps taken each day (`nb_steps_each_day`)
-```{r}
+
+```r
         # Group by date and summarise per day
         nb_steps_each_day <- group_by(activity, date)
         # Summarise and set column names
@@ -105,7 +114,8 @@ library(knitr)
 \  
 
 #### Horizontal line to draw for mean and median 
-```{r}
+
+```r
         # Mean
         mean_total_nb_steps <- mean(nb_steps_each_day$steps_a_day)
         
@@ -154,8 +164,8 @@ library(knitr)
 
 #### Histogram for **Total number of steps taken each day** (`nb_steps_each_day`)
 
-```{r}
-                
+
+```r
                 g <- ggplot(
                         data = nb_steps_each_day,
                         aes(x = day, y = steps_a_day)
@@ -168,16 +178,19 @@ library(knitr)
                 print(g)
 ```
 
-- Mean total number of steps taken each day : **`r format(round(mean(nb_steps_each_day$steps_a_day),0), big.mark = " ")` steps **
+![](PA1_template_files/figure-html/unnamed-chunk-11-1.png)<!-- -->
 
-- Median total number of steps taken each day : **`r format(round(median(nb_steps_each_day$steps_a_day),0), big.mark = " ")` steps**
+- Mean total number of steps taken each day : **9 354 steps **
+
+- Median total number of steps taken each day : **10 395 steps**
 
 \  
 
 \  
 
 [File : figure/plot1.png](figure/plot1.png)
-```{r warning=FALSE}
+
+```r
                 png(
                         filename = paste(fig_folder,"plot1.png",sep="/"),
                         width = 640,
@@ -188,7 +201,11 @@ library(knitr)
                 )
                 print(g)
                 dev.off()
-                
+```
+
+```
+## quartz_off_screen 
+##                 2
 ```
 
 
@@ -206,23 +223,32 @@ The average daily activity pattern is figured with
 \  
 
 #### Group by interval and summarise per interval
-```{r}
+
+```r
         daily_activity <- group_by(activity, interval)
         daily_activity <- summarise(daily_activity, steps_an_interval = sum(steps, na.rm = TRUE))
         str(daily_activity)
 ```
 
+```
+## Classes 'tbl_df', 'tbl' and 'data.frame':	288 obs. of  2 variables:
+##  $ interval         : chr  "0000" "0005" "0010" "0015" ...
+##  $ steps_an_interval: int  91 18 7 8 4 111 28 46 0 78 ...
+```
+
 #### Add a column with average number of steps taken, averaged across all days (`averaged_across_days`)
 During the data frame period, there is **61 days**
-```{r}
+
+```r
         daily_activity$averaged_across_days <- daily_activity$steps_an_interval/61
 ```
 \  
 
 #### Convert column interval into POSIXct
-```{r}
+
+```r
         daily_activity$interval <- parse_date_time(daily_activity$interval, "HM") + months(9) + years(2012)
-```           
+```
 \  
 
 #### Plotting average daily activity
@@ -230,19 +256,21 @@ During the data frame period, there is **61 days**
 We use ggplot2 library
 
 First, we calculate the 5-minute interval containing the maximum steps
-```{r}
+
+```r
 max_average <- max(daily_activity$averaged_across_days)
 interval_max_steps <- subset(daily_activity, averaged_across_days == max_average)
 interval_max_steps_ftime <- date_format("%Hh%M")(interval_max_steps$interval)
 ```
 
-The maximum number of steps averaged across days (rounded `max_average`) is **`r round(max_average,0) ` steps**, it happens at **`r interval_max_steps_ftime`** (`interval_max_steps_ftime`)
+The maximum number of steps averaged across days (rounded `max_average`) is **179 steps**, it happens at **08h35** (`interval_max_steps_ftime`)
 
 \  
 
 So we init a dash line (`hline`) and a text (`htext`) to point out in blue the maximum value of averages daily activity
 
-```{r}
+
+```r
         hline <- geom_hline(
                 yintercept = max_average,
                 linetype = "dashed",
@@ -269,13 +297,13 @@ So we init a dash line (`hline`) and a text (`htext`) to point out in blue the m
                 ),
                 color="#6666ff"
         )
-        
 ```
 \  
 
 Then we set and print the ggplot instance, a png file is generated in folder figure
 
-```{r warning=FALSE}
+
+```r
         g <- ggplot(
                 data = daily_activity,
                 aes(x = interval, y = averaged_across_days)
@@ -290,8 +318,11 @@ Then we set and print the ggplot instance, a png file is generated in folder fig
         print(g)
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-18-1.png)<!-- -->
+
 [File : figure/plot2.png](figure/plot2.png)
-```{r warning=FALSE}
+
+```r
         png(
                 filename = paste(fig_folder,
                 "plot2.png",sep="/"),
@@ -305,6 +336,11 @@ Then we set and print the ggplot instance, a png file is generated in folder fig
         dev.off()
 ```
 
+```
+## quartz_off_screen 
+##                 2
+```
+
 
 \  
 
@@ -312,10 +348,15 @@ Then we set and print the ggplot instance, a png file is generated in folder fig
 
 ## Imputing missing values
 
-There is **`r format(sum(is.na(activity$steps), na.rm = FALSE), big.mark = " ")` missing values**, i.e. **`r round(sum(is.na(activity$steps), na.rm = FALSE)/nrow(activity)*100,2)`%** of the values, in the dataset `activity`
-```{r}
+There is **2 304 missing values**, i.e. **13.11%** of the values, in the dataset `activity`
+
+```r
         n_missing_values <- sum(is.na(activity$steps), na.rm = FALSE)
         print(n_missing_values)
+```
+
+```
+## [1] 2304
 ```
 \  
 
@@ -332,8 +373,9 @@ There is **`r format(sum(is.na(activity$steps), na.rm = FALSE), big.mark = " ")`
 
 \  
 
-Replace the **`r format(sum(is.na(activity$steps), na.rm = FALSE), big.mark = " ")`** `NA`values
-```{r}
+Replace the **2 304** `NA`values
+
+```r
         activity_filled <- activity
         for( k in rep(1:length(activity$steps))){
                 if(is.na(activity_filled$steps[[k]])){
@@ -344,14 +386,20 @@ Replace the **`r format(sum(is.na(activity$steps), na.rm = FALSE), big.mark = " 
 \  
 
 Check total number of missing values in the new dataset (`activity_filled`)
-```{r}
+
+```r
         print(sum(is.na(activity_filled$steps), na.rm = FALSE))
+```
+
+```
+## [1] 0
 ```
 \  
 
 #### New Histogram for total number of steps taken each day, with filled-in missing values
 Calculate the new total number of steps taken each day (`nb_steps_each_day`), summarise it and name columns
-```{r}
+
+```r
         nb_steps_each_day <- group_by(activity_filled, date)
         nb_steps_each_day <- summarise(nb_steps_each_day, steps_a_day = sum(steps, na.rm = TRUE))
         names(nb_steps_each_day) <- c("day", "steps_a_day")
@@ -359,7 +407,8 @@ Calculate the new total number of steps taken each day (`nb_steps_each_day`), su
 \  
 
 Horizontal line to draw for mean and median 
-```{r}
+
+```r
         # Mean
         mean_total_nb_steps <- mean(nb_steps_each_day$steps_a_day)
         
@@ -405,7 +454,8 @@ Horizontal line to draw for mean and median
         )
 ```
 
-```{r}
+
+```r
         g <- ggplot(
                 data = nb_steps_each_day,
                 aes(x = day, y = steps_a_day)
@@ -420,8 +470,11 @@ Horizontal line to draw for mean and median
         print(g)
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-25-1.png)<!-- -->
+
 [File : figure/plot3.png](figure/plot3.png)
-```{r warning=FALSE}
+
+```r
         png(
                 filename = paste(fig_folder,
                 "plot3.png",sep="/"),
@@ -435,9 +488,14 @@ Horizontal line to draw for mean and median
         dev.off()
 ```
 
-- Mean total number of steps taken each day : **`r format(round(mean(nb_steps_each_day$steps_a_day),0), big.mark = " ")` steps **
+```
+## quartz_off_screen 
+##                 2
+```
 
-- Median total number of steps taken each day : **`r format(round(median(nb_steps_each_day$steps_a_day),0), big.mark = " ")` steps**
+- Mean total number of steps taken each day : **10 581 steps **
+
+- Median total number of steps taken each day : **10 395 steps**
 
 \  
 With filled-in missing values
@@ -454,7 +512,8 @@ With filled-in missing values
 
 #### Add new column in (`activity_filled`)
 day_type as.factor with 2 levels "weekday", "weekend"
-```{r}
+
+```r
         # Add column day_type, init with "weekday"
         activity_filled$day_type <- "weekday"
         
@@ -464,7 +523,8 @@ day_type as.factor with 2 levels "weekday", "weekend"
 \  
 
 #### Daily activity pattern grouped by day_type
-```{r}
+
+```r
         daily_activity <- group_by(activity_filled, interval, day_type)
         daily_activity <- summarise(daily_activity, steps_an_interval = sum(steps, na.rm = TRUE))
         # names(daily_activity) <- c("day", "day_type", "steps_a_day")
@@ -473,19 +533,22 @@ day_type as.factor with 2 levels "weekday", "weekend"
 
 #### Add a column with average number of steps taken, averaged across all days (`averaged_across_days`)
 During the data frame period, there is **61 days**
-```{r}
+
+```r
         daily_activity$averaged_across_days <- daily_activity$steps_an_interval/61
 ```
 \  
 
 #### Convert column interval into POSIXct
-```{r}
+
+```r
         daily_activity$interval <- parse_date_time(daily_activity$interval, "HM") + months(9) + years(2012)
-```           
+```
 \  
 
 #### Plotting average daily activity by comparing weekdays / weekends
-```{r warning=FALSE}
+
+```r
         g <- ggplot(
                 data = daily_activity,
                 aes(x = interval, y = averaged_across_days, color = day_type, group = day_type)
@@ -500,8 +563,11 @@ During the data frame period, there is **61 days**
         print(g)
 ```
 
+![](PA1_template_files/figure-html/unnamed-chunk-31-1.png)<!-- -->
+
 [File : figure/plot4.png](figure/plot4.png)
-```{r warning=FALSE}
+
+```r
                 png(
                         filename = paste(fig_folder,"plot4.png",sep="/"),
                         width = 640,
@@ -512,5 +578,9 @@ During the data frame period, there is **61 days**
                 )
                 print(g)
                 dev.off()
-                
+```
+
+```
+## quartz_off_screen 
+##                 2
 ```
