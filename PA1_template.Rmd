@@ -437,6 +437,8 @@ Horizontal line to draw for mean and median
 
 - Median total number of steps taken each day : **`r format(round(median(nb_steps_each_day_filled$steps_a_day),0), big.mark = " ")` steps**
 
+- On left, we see 2 days with full zero step, which are not processed by NA treatment
+
 \  
 With filled-in missing values, 
 
