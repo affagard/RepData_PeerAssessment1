@@ -104,68 +104,65 @@ library(knitr)
 ```
 \  
 
-#### Horizontal line to draw for mean and median 
+#### Mean and Median to draw their vertical lines
 ```{r}
         # Mean
-        mean_total_nb_steps <- mean(nb_steps_each_day$steps_a_day)
-        
-        h_mean <- geom_hline(
-                yintercept = mean_total_nb_steps,
-                linetype = "dashed",
-                color = "#ff6666"
-        )
-
-        text_mean <- geom_label(
-                x = nb_steps_each_day$day[[1]],
-                y = max(nb_steps_each_day$steps_a_day),
-                hjust = "left",
-                label = paste(
-                        "Mean = ",
-                        round(mean_total_nb_steps,0),
-                        " steps",
-                        sep=""
-                ),
-                color="#ff6666"
-        )
-        
+        mean_total_nb_steps <- mean(nb_steps_each_day$steps_a_day, na.rm = TRUE)
         # Median
-        median_total_nb_steps <- median(nb_steps_each_day$steps_a_day)
-        
-        h_median <- geom_hline(
-                yintercept = median_total_nb_steps,
-                linetype = "dashed",
-                color = "#6666ff"
-        )
-
-        text_median <- geom_label(
-                x = nb_steps_each_day$day[[1]],
-                y = max(nb_steps_each_day$steps_a_day)-1500,
-                hjust = "left",
-                label = paste(
-                        "Median = ",
-                        round(median_total_nb_steps,0),
-                        " steps",
-                        sep=""
-                ),
-                color="#6666ff"
-        )
+        median_total_nb_steps <- median(nb_steps_each_day$steps_a_day, na.rm = TRUE)
 ```
 \  
 
 #### Histogram for **Total number of steps taken each day** (`nb_steps_each_day`)
 
 ```{r}
-                
-                g <- ggplot(
-                        data = nb_steps_each_day,
-                        aes(x = day, y = steps_a_day)
-                )
-                g <- g + geom_line(aes(color = "##ff6666"), show.legend = FALSE) + theme_bw()
-                g <- g + ggtitle("Total number of steps taken each day (figure/plot1.png)")
-                g <- g + ylab("Steps") + xlab("Days")
-                g <- g + h_mean + h_median + text_mean + text_median
-                g <- g + ylim(0,max(nb_steps_each_day$steps_a_day))
-                print(g)
+        g <- ggplot(
+                data = nb_steps_each_day,
+                aes(x = steps_a_day)
+        )
+        g <- g + theme_light()
+        g <- g + geom_histogram(bins = 30, color = "#666666", fill = "white", show.legend = FALSE, na.rm = FALSE)
+        g <- g + ggtitle("Total number of steps taken each day (figure/plot1.png)")
+        g <- g + xlab("Steps / day")
+        # Mean line
+        g <- g + geom_vline(
+                        xintercept = mean_total_nb_steps,
+                        linetype = "dashed",
+                        color = "#ff6666"
+                        )
+        # Mean label
+        g <- g + geom_label(
+                        x = 3000,
+                        y = 9.5,
+                        hjust = "left",
+                        label = paste(
+                                "Mean = ",
+                                round(mean_total_nb_steps,0),
+                                " steps",
+                                sep=""
+                                ),
+                        color="#ff6666"
+                        )
+        # Median line
+        g <- g + geom_vline(
+                        xintercept = median_total_nb_steps,
+                        linetype = "dashed",
+                        color = "#6666ff"
+                        )
+        # Median label
+        g <- g + geom_label(
+                        x = 12000,
+                        y = 9.5,
+                        hjust = "left",
+                        label = paste(
+                                "Median = ",
+                                round(median_total_nb_steps,0),
+                                " steps",
+                                sep=""
+                        ),
+                        color="#6666ff"
+                        )
+        print(g)
 ```
 
 - Mean total number of steps taken each day : **`r format(round(mean(nb_steps_each_day$steps_a_day),0), big.mark = " ")` steps **
@@ -178,16 +175,16 @@ library(knitr)
 
 [File : figure/plot1.png](figure/plot1.png)
 ```{r warning=FALSE}
-                png(
-                        filename = paste(fig_folder,"plot1.png",sep="/"),
-                        width = 640,
-                        height = 640,
-                        units = "px",
-                        pointsize = 12,
-                        bg = "white"
-                )
-                print(g)
-                dev.off()
+        png(
+                filename = paste(fig_folder,"plot1.png",sep="/"),
+                width = 640,
+                height = 640,
+                units = "px",
+                pointsize = 12,
+                bg = "white"
+        )
+        print(g)
+        dev.off()
                 
 ```
 
@@ -205,17 +202,10 @@ The average daily activity pattern is figured with
 - In follows, (`daily_activity`) is the data frame to get the daily activity pattern
 \  
 
-#### Group by interval and summarise per interval
+#### Group by interval and summarise by the mean
 ```{r}
         daily_activity <- group_by(activity, interval)
-        daily_activity <- summarise(daily_activity, steps_an_interval = sum(steps, na.rm = TRUE))
-        str(daily_activity)
-```
-
-#### Add a column with average number of steps taken, averaged across all days (`averaged_across_days`)
-During the data frame period, there is **61 days**
-```{r}
-        daily_activity$averaged_across_days <- daily_activity$steps_an_interval/61
+        daily_activity <- summarise(daily_activity, average_steps = mean(steps, na.rm = TRUE))
 ```
 \  
 
@@ -231,8 +221,8 @@ We use ggplot2 library
 
 First, we calculate the 5-minute interval containing the maximum steps
 ```{r}
-max_average <- max(daily_activity$averaged_across_days)
-interval_max_steps <- subset(daily_activity, averaged_across_days == max_average)
+max_average <- max(daily_activity$average_steps)
+interval_max_steps <- subset(daily_activity, average_steps == max_average)
 interval_max_steps_ftime <- date_format("%Hh%M")(interval_max_steps$interval)
 ```
 
@@ -240,7 +230,7 @@ The maximum number of steps averaged across days (rounded `max_average`) is **`r
 
 \  
 
-So we init a dash line (`hline`) and a text (`htext`) to point out in blue the maximum value of averages daily activity
+So we init a dash lines (`hline`) and (`vline`), and a text (`htext`) to point out in blue the maximum value of averages daily activity
 
 ```{r}
         hline <- geom_hline(
@@ -278,10 +268,10 @@ Then we set and print the ggplot instance, a png file is generated in folder fig
 ```{r warning=FALSE}
         g <- ggplot(
                 data = daily_activity,
-                aes(x = interval, y = averaged_across_days)
+                aes(x = interval, y = average_steps, na.rm = TRUE)
         )
-        g <- g + geom_line(aes(color = "red"), show.legend = FALSE) + theme_bw()
-        g <- g + ylim(c(0,max(daily_activity$averaged_across_days)+10))
+        g <- g + geom_line(aes(color = "red"), show.legend = FALSE) + theme_light()
+        g <- g + ylim(c(0,max(daily_activity$average_steps)*1.1))
         g <- g + geom_smooth(method = "loess", color = "#6666ff", bg = "#ccccee")
         g <- g + ggtitle("Daily activity pattern, 5 minutes averaged over 2 months, (figure/plot2.png)")
         g <- g + ylab("Steps") + xlab("Time on a day")
@@ -323,7 +313,7 @@ There is **`r format(sum(is.na(activity$steps), na.rm = FALSE), big.mark = " ")`
 
 - We guess the best way to extrapolate missing steps (`NA` values) is to replace missing value by the average daily activity corresponding to its 5-minutes interval.
 
-- We are alerted by the fact that 2 days have daily activity under 5% of the average daily steps, we could consider them as abnormal and decide to replace all of their interval steps values by their average daily activity. Nevertheless, in this report, we assume to not alter theses "surely-dummy" days.
+- We are alerted by the fact that 2 days have daily activity under 5% of the average daily steps, we could consider them as abnormal and decide to replace all of their interval steps values by their average daily activity. Nevertheless, since it's not required in assigments, we assume to not alter theses "surely-dummy" days.
 
 - We set a new dataset (`activity_filled`) by replacing missing values of steps.
 
@@ -335,88 +325,96 @@ There is **`r format(sum(is.na(activity$steps), na.rm = FALSE), big.mark = " ")`
 Replace the **`r format(sum(is.na(activity$steps), na.rm = FALSE), big.mark = " ")`** `NA`values
 ```{r}
         activity_filled <- activity
-        for( k in rep(1:length(activity$steps))){
+        for( k in rep(1:length(activity_filled$steps))){
                 if(is.na(activity_filled$steps[[k]])){
-                        activity_filled$steps[[k]] <- round(daily_activity$averaged_across_days[[1+k%%288]],0)
+                        activity_filled$steps[[k]] <- round(daily_activity$average_steps[[1+k%%288]],0)
                 }
         }
+        activity_filled$steps <- as.integer(activity_filled$steps)
 ```
 \  
 
-Check total number of missing values in the new dataset (`activity_filled`)
+Check the total number of missing values is now 0 for the new dataset (`activity_filled`)
 ```{r}
         print(sum(is.na(activity_filled$steps), na.rm = FALSE))
 ```
 \  
 
+
 #### New Histogram for total number of steps taken each day, with filled-in missing values
-Calculate the new total number of steps taken each day (`nb_steps_each_day`), summarise it and name columns
+Calculate the new total number of steps taken each day (`nb_steps_each_day_filled`), summarise it and name columns
 ```{r}
-        nb_steps_each_day <- group_by(activity_filled, date)
-        nb_steps_each_day <- summarise(nb_steps_each_day, steps_a_day = sum(steps, na.rm = TRUE))
-        names(nb_steps_each_day) <- c("day", "steps_a_day")
+        # Group by date and summarise per day
+        nb_steps_each_day_filled <- group_by(activity_filled, date)
+        # Summarise by sum and set column names
+        nb_steps_each_day_filled <- summarise(nb_steps_each_day_filled, steps_a_day = sum(steps, na.rm = TRUE))
+        names(nb_steps_each_day_filled) <- c("day", "steps_a_day")
 ```
 \  
 
 Horizontal line to draw for mean and median 
 ```{r}
         # Mean
-        mean_total_nb_steps <- mean(nb_steps_each_day$steps_a_day)
-        
-        h_mean <- geom_hline(
-                yintercept = mean_total_nb_steps,
-                linetype = "dashed",
-                color = "#ff6666"
-        )
-
-        text_mean <- geom_label(
-                x = nb_steps_each_day$day[[1]],
-                y = max(nb_steps_each_day$steps_a_day),
-                hjust = "left",
-                label = paste(
-                        "Mean = ",
-                        round(mean_total_nb_steps,0),
-                        " steps",
-                        sep=""
-                ),
-                color="#ff6666"
-        )
+        mean_total_nb_steps_filled <- mean(nb_steps_each_day_filled$steps_a_day, na.rm = TRUE)
         
         # Median
-        median_total_nb_steps <- median(nb_steps_each_day$steps_a_day)
-        
-        h_median <- geom_hline(
-                yintercept = median_total_nb_steps,
-                linetype = "dashed",
-                color = "#6666ff"
-        )
-
-        text_median <- geom_label(
-                x = nb_steps_each_day$day[[1]],
-                y = max(nb_steps_each_day$steps_a_day)-1500,
-                hjust = "left",
-                label = paste(
-                        "Median = ",
-                        round(median_total_nb_steps,0),
-                        " steps",
-                        sep=""
-                ),
-                color="#6666ff"
-        )
+        median_total_nb_steps_filled <- median(nb_steps_each_day_filled$steps_a_day, na.rm = TRUE)
 ```
 
 ```{r}
         g <- ggplot(
-                data = nb_steps_each_day,
-                aes(x = day, y = steps_a_day)
+                data = nb_steps_each_day_filled,
+                aes(x = steps_a_day)
         )
-        g <- g + geom_line(aes(color = "#6666ff"), show.legend = FALSE) + theme_bw()
+        g <- g + theme_light()
+        g <- g + geom_histogram(bins = 30, color = "#666666", fill = "white", show.legend = FALSE, na.rm = FALSE)
         g <- g + ggtitle(
                 "Steps taken each day, with filled-in missing values, (figure/plot3.png)"
         )
-        g <- g + h_mean + h_median + text_mean + text_median
-        g <- g + ylab("Steps") + xlab("Days")
-        g <- g + ylim(0,max(nb_steps_each_day$steps_a_day))
+        g <- g + xlab("Steps / day")
+        
+        # Mean line
+        g <- g + geom_vline(
+                        xintercept = mean_total_nb_steps_filled,
+                        linetype = "dashed",
+                        color = "#ff6666"
+                )
+        
+        # Mean label
+        g <- g + geom_label(
+                        x = 3000,
+                        y = 11,
+                        hjust = "left",
+                        label = paste(
+                                "Mean = ",
+                                round(mean_total_nb_steps_filled,0),
+                                " steps",
+                                sep=""
+                        ),
+                        color="#ff6666"
+                )
+        
+        # Median line
+        g <- g + geom_vline(
+                        xintercept = median_total_nb_steps_filled,
+                        linetype = "dashed",
+                        color = "#6666ff"
+                )
+        
+        # Median label
+        g <- g + geom_label(
+                        x = 12000,
+                        y = 11,
+                        hjust = "left",
+                        label = paste(
+                                "Median = ",
+                                round(median_total_nb_steps_filled,0),
+                                " steps",
+                                sep=""
+                        ),
+                        color="#6666ff"
+                )
+        
         print(g)
 ```
 
@@ -435,16 +433,16 @@ Horizontal line to draw for mean and median
         dev.off()
 ```
 
-- Mean total number of steps taken each day : **`r format(round(mean(nb_steps_each_day$steps_a_day),0), big.mark = " ")` steps **
+- Mean total number of steps taken each day : **`r format(round(mean(nb_steps_each_day_filled$steps_a_day),0), big.mark = " ")` steps **
 
-- Median total number of steps taken each day : **`r format(round(median(nb_steps_each_day$steps_a_day),0), big.mark = " ")` steps**
+- Median total number of steps taken each day : **`r format(round(median(nb_steps_each_day_filled$steps_a_day),0), big.mark = " ")` steps**
 
 \  
-With filled-in missing values
+With filled-in missing values, 
 
-- the median is the same,
-
-- the mean is closer to the median.
+ - the mean is closer to the median,
+ 
+ - the mean and the median are higher.
 
 
 \  
@@ -452,46 +450,40 @@ With filled-in missing values
 ### Are there differences in activity patterns between weekdays and weekends?
 \  
 
-#### Add new column in (`activity_filled`)
-day_type as.factor with 2 levels "weekday", "weekend"
+#### Set a new dataset (`activity_w`) from (àctivity_filled`)
+With a new field (`day_type`) as.factor with 2 levels "weekday", "weekend"
 ```{r}
+        activity_w <- activity_filled
         # Add column day_type, init with "weekday"
-        activity_filled$day_type <- "weekday"
+        activity_w$day_type <- "weekday"
         
-        # For week end days, replace "weekday" by "weekend"
-        activity_filled$day_type[which(wday(activity_filled$date, week_start = 1) %in% c(6,7))] <- "weekend"
+        # For weekend days, replace "weekday" by "weekend"
+        activity_w$day_type[which(wday(activity_w$date, week_start = 1) %in% c(6,7))] <- "weekend"
 ```
 \  
 
-#### Daily activity pattern grouped by day_type
+#### Daily activity pattern (`daily_activity_w`)
+From (`activity_w`) grouped by (`day_type`) and (`ìnterval`) and summarised by the mean
 ```{r}
-        daily_activity <- group_by(activity_filled, interval, day_type)
-        daily_activity <- summarise(daily_activity, steps_an_interval = sum(steps, na.rm = TRUE))
-        # names(daily_activity) <- c("day", "day_type", "steps_a_day")
-```
-\  
-
-#### Add a column with average number of steps taken, averaged across all days (`averaged_across_days`)
-During the data frame period, there is **61 days**
-```{r}
-        daily_activity$averaged_across_days <- daily_activity$steps_an_interval/61
+        daily_activity_w <- group_by(activity_w, interval, day_type)
+        daily_activity_w <- summarise(daily_activity_w, average_steps = mean(steps, na.rm = TRUE))
 ```
 \  
 
 #### Convert column interval into POSIXct
 ```{r}
-        daily_activity$interval <- parse_date_time(daily_activity$interval, "HM") + months(9) + years(2012)
+        daily_activity_w$interval <- parse_date_time(daily_activity_w$interval, "HM") + months(9) + years(2012)
 ```           
 \  
 
 #### Plotting average daily activity by comparing weekdays / weekends
 ```{r warning=FALSE}
         g <- ggplot(
-                data = daily_activity,
-                aes(x = interval, y = averaged_across_days, color = day_type, group = day_type)
+                data = daily_activity_w,
+                aes(x = interval, y = average_steps, color = day_type, group = day_type)
         )
-        g <- g + geom_line(show.legend = TRUE) + theme_bw()
-        g <- g + ylim(c(0,max(daily_activity$averaged_across_days)+10))
+        g <- g + geom_line(show.legend = TRUE) + theme_light()
+        g <- g + ylim(c(0,max(daily_activity_w$average_steps)*1.05))
         g <- g + geom_smooth(method = "loess", color = "#6666ff", bg = "#ccccee")
         g <- g + ggtitle("Daily activity pattern, 5 minutes averaged over 2 months, (figure/plot4.png)")
         g <- g + ylab("Steps") + xlab("Time on a day")
